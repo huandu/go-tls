@@ -4,8 +4,8 @@
 package tls
 
 import (
+	"fmt"
 	"reflect"
-	"sync"
 	"testing"
 )
 
@@ -34,14 +34,10 @@ func (f closerFunc) Close() error {
 }
 
 func TestTLS(t *testing.T) {
-	var wg sync.WaitGroup
 	times := 100
-	wg.Add(times)
 
 	for i := 0; i < times; i++ {
-		go func() {
-			defer wg.Done()
-
+		t.Run(fmt.Sprintf("Round %v", i), func(t *testing.T) {
 			closed := false
 			k1 := tlsKey1{}
 			v1 := 1234
@@ -114,8 +110,6 @@ func TestTLS(t *testing.T) {
 					t.Fatalf("AtExit should call func in FILO order.")
 				}
 			})
-		}()
+		})
 	}
-
-	wg.Wait()
 }

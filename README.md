@@ -50,6 +50,7 @@ tls.AtExit(func() {
 
 Several limitations so far.
 
+* Works with Go 1.7 or newer.
 * Only works on unix-like systems. It's possible to work on Windows and other OS if we can implement a correct `syscall.Mprotect`. It should not be difficult, but I don't have any machine to verify it. Help wanted.
 
 ## How it works ##
