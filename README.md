@@ -38,7 +38,9 @@ If the data implements `io.Closer`, it will be called automatically when `Reset`
 
 ## Execute code when goroutine exits ##
 
-`AtExit` pushes a function to a slice of at exit handlers and executes them when goroutine is exiting in FILO order. TLS data is not cleared when calling at exit handlers.
+`AtExit` pushes a function to a slice of at-exit handlers and executes them when goroutine is exiting in FILO order. All TLS data is still available when calling at-exit handlers.
+
+`AtExit` doesn't work on main goroutine as it doesn't exit at all.
 
 ```go
 tls.AtExit(func() {
@@ -65,7 +67,7 @@ This approach is relatively safe, because all technics are based on runtime type
 Following runtime types are used.
 
 * The `g.stack`: It's the first field of `g`. It stores stack memory range of a `g`.
-* The symbol table for functions: When Go runtime allocates more stack, it validates all return addresses on stack. If I change `runtime.goexit` to another function pc, runtime will complain it as it's not a valid top of stack function (checked by `runtime.topofstack`). To walk round it, I hacks function symbol table to set `_func.pcsp` to `0` to skip checks.
+* Function symbol table: When Go runtime allocates more stack, it validates all return addresses on stack. If I change `runtime.goexit` to another function pc, runtime will complain it as it's not a valid top of stack function (checked by `runtime.topofstack`). As a workaround, I hacks function symbol table to set `_func.pcsp` of the hacked goexit to `0` to skip checks.
 
 ## Similar packages ##
 
