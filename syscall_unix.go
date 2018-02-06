@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	pcQuantum = 1
-	pageSize  = 4096
+	pageSize = 4096
 )
 
 const (
