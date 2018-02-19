@@ -9,17 +9,20 @@ package tls
 import (
 	"io"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	"github.com/huandu/go-tls/g"
 )
 
 var (
-	tlsDataMap = map[unsafe.Pointer]*tlsData{}
-	tlsMu      sync.Mutex
+	tlsDataMap  = map[unsafe.Pointer]*tlsData{}
+	tlsMu       sync.Mutex
+	tlsUniqueID int64
 )
 
 type tlsData struct {
+	id          int64
 	data        dataMap
 	atExitFuncs []func()
 }
@@ -71,6 +74,22 @@ func Del(key interface{}) {
 	delete(dm.data, key)
 }
 
+// ID returns a unique ID for a goroutine.
+// If it's not possible to get the value, ID returns 0.
+//
+// It's guaranteed to be unique and consistent for one goroutine,
+// unless it's called after Unload, which completely resets TLS stub.
+// To be clear, it's not goid used by Go runtime.
+func ID() int64 {
+	dm := fetchDataMap(false)
+
+	if dm == nil {
+		return 0
+	}
+
+	return dm.id
+}
+
 // AtExit runs f when current goroutine is exiting.
 // The f is called in FILO order.
 func AtExit(f func()) {
@@ -78,7 +97,8 @@ func AtExit(f func()) {
 	dm.atExitFuncs = append(dm.atExitFuncs, f)
 }
 
-// Reset clears TLS and releases all resources for current goroutine.
+// Reset clears TLS data and releases all resources for current goroutine.
+// It doesn't remove any AtExit handlers.
 func Reset() {
 	gp := g.G()
 
@@ -86,16 +106,46 @@ func Reset() {
 		return
 	}
 
+	reset(gp, false)
+}
+
+func reset(gp unsafe.Pointer, complete bool) (alreadyReset bool) {
+	var data dataMap
+
 	tlsMu.Lock()
 	dm := tlsDataMap[gp]
-	data := dm.data
-	dm.data = dataMap{}
-	tlsMu.Unlock()
 
-	unhack(gp)
+	if dm == nil {
+		alreadyReset = true
+	} else {
+		data = dm.data
+
+		if complete {
+			delete(tlsDataMap, gp)
+		} else {
+			dm.data = dataMap{}
+		}
+	}
+
+	tlsMu.Unlock()
 
 	for _, d := range data {
 		safeClose(d)
+	}
+
+	return
+}
+
+// Unload completely unloads TLS and clear all data and AtExit handlers.
+func Unload() {
+	gp := g.G()
+
+	if gp == nil {
+		return
+	}
+
+	if !reset(gp, true) {
+		unhack(gp)
 	}
 }
 
@@ -110,6 +160,7 @@ func resetAtExit() {
 	dm := tlsDataMap[gp]
 	funcs := make([]func(), 0, len(dm.atExitFuncs))
 	funcs = append(funcs, dm.atExitFuncs...)
+	dm.atExitFuncs = nil
 	tlsMu.Unlock()
 
 	// Call handlers in FILO order.
@@ -119,7 +170,7 @@ func resetAtExit() {
 
 	tlsMu.Lock()
 	dm = tlsDataMap[gp]
-	tlsDataMap[gp] = nil
+	delete(tlsDataMap, gp)
 	tlsMu.Unlock()
 
 	for _, d := range dm.data {
@@ -158,6 +209,7 @@ func fetchDataMap(readonly bool) *tlsData {
 	if dm == nil && !readonly {
 		needHack = true
 		dm = &tlsData{
+			id:   atomic.AddInt64(&tlsUniqueID, 1),
 			data: dataMap{},
 		}
 		tlsDataMap[gp] = dm

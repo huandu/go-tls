@@ -27,11 +27,21 @@ d, ok := tls.Get(k)
 assert(ok)
 assert(d.Value().(int) == v)
 
+// Get a unique ID for current goroutine.
+// It's guaranteed to be unique.
+id := tls.ID()
+
 // Delete data by k.
 tls.Del(k)
 
 // Reset TLS so that all keys are removed and all data is closed if necessary.
+// It doesn't remove any AtExit handler.
 tls.Reset()
+
+// Completely unload TLS and discard all data and AtExit handlers.
+// If TLS method is called after Unload, a new TLS stub will be created.
+// The ID() will return a different value.
+tls.Unload()
 ```
 
 If the data implements `io.Closer`, it will be called automatically when `Reset` is called or goroutine exits. It's not allowed to use any TLS methods in the `Close` method of TLS data. It will cause permanent memory leak.

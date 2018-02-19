@@ -6,6 +6,7 @@ package tls
 import (
 	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -34,7 +35,9 @@ func (f closerFunc) Close() error {
 }
 
 func TestTLS(t *testing.T) {
-	times := 100
+	times := 1000
+	idMap := map[int64]struct{}{}
+	idMapMu := sync.Mutex{}
 
 	for i := 0; i < times; i++ {
 		t.Run(fmt.Sprintf("Round %v", i), func(t *testing.T) {
@@ -110,6 +113,21 @@ func TestTLS(t *testing.T) {
 					t.Fatalf("AtExit should call func in FILO order.")
 				}
 			})
+
+			id := ID()
+
+			if id <= 0 {
+				t.Fatalf("fail to get ID. [id:%v]", id)
+			}
+
+			idMapMu.Lock()
+			defer idMapMu.Unlock()
+
+			if _, ok := idMap[id]; ok {
+				t.Fatalf("duplicated ID. [id:%v]", id)
+			}
+
+			idMap[id] = struct{}{}
 		})
 	}
 }
