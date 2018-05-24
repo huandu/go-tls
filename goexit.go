@@ -44,12 +44,16 @@ func init() {
 		ch <- pc[sz-1]
 	}()
 	originalGoexitFn = <-ch
+
 }
 
 // Get hacked goexit pc.
 func init() {
+	entry := runtime.FuncForPC(originalGoexitFn).Entry()
+	pcQuantum := originalGoexitFn - entry
+
 	var hackedIf interface{} = hackedGoexit
-	hackedGoexitFn = *(*interfaceImpl)(unsafe.Pointer(&hackedIf)).funcPtr
+	hackedGoexitFn = *(*interfaceImpl)(unsafe.Pointer(&hackedIf)).funcPtr + pcQuantum
 
 	fnHacked := runtime.FuncForPC(hackedGoexitFn)
 	fnSymtab := (*_func)(unsafe.Pointer(fnHacked))
@@ -62,7 +66,9 @@ func init() {
 	mprotect(unsafe.Pointer(fnSymtab), funcSymbolSize, protectRead)
 }
 
-func hackedGoexit() {
+func hackedGoexit()
+
+func hackedGoexit1() {
 	resetAtExit()
 	runtime.Goexit()
 	panic("never return")
