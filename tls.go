@@ -158,8 +158,7 @@ func resetAtExit() {
 
 	tlsMu.Lock()
 	dm := tlsDataMap[gp]
-	funcs := make([]func(), 0, len(dm.atExitFuncs))
-	funcs = append(funcs, dm.atExitFuncs...)
+	funcs := dm.atExitFuncs
 	dm.atExitFuncs = nil
 	tlsMu.Unlock()
 

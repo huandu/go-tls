@@ -5,9 +5,13 @@ package tls
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
+	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 type tlsKey1 struct{}
@@ -129,5 +133,73 @@ func TestTLS(t *testing.T) {
 
 			idMap[id] = struct{}{}
 		})
+	}
+}
+
+func TestShrinkStack(t *testing.T) {
+	const times = 50000
+	const gcTimes = 100
+	sleep := 10 * time.Millisecond
+	errors := make(chan error, times)
+	var done int64
+
+	rand.Seed(time.Now().UnixNano())
+
+	var wg sync.WaitGroup
+	wg.Add(times)
+
+	for i := 0; i < times; i++ {
+		go func() {
+			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					errors <- fmt.Errorf("recovered with message: %v", r)
+				}
+			}()
+
+			AtExit(func() {
+				atomic.AddInt64(&done, 1)
+			})
+			n := rand.Intn(gcTimes)
+
+			for j := 0; j < n; j++ {
+				triggerMoreStack(100)
+				time.Sleep(time.Duration((0.5 + rand.Float64()) * float64(sleep)))
+			}
+		}()
+	}
+
+	exit := make(chan bool, 1)
+	go func() {
+		wg.Wait()
+		exit <- true
+	}()
+
+GC:
+	for {
+		time.Sleep(sleep)
+		runtime.GC()
+
+		select {
+		case <-exit:
+			break GC
+		default:
+		}
+	}
+
+	close(errors)
+	failed := false
+
+	for err := range errors {
+		failed = true
+		t.Logf("panic [err:%v]", err)
+	}
+
+	if failed {
+		t.FailNow()
+	}
+
+	if done != times {
+		t.Fatalf("some AtExit handlers are not called. [expected:%v] [actual:%v]", times, done)
 	}
 }
