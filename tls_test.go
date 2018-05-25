@@ -150,7 +150,6 @@ func TestShrinkStack(t *testing.T) {
 
 	for i := 0; i < times; i++ {
 		go func() {
-			defer wg.Done()
 			defer func() {
 				if r := recover(); r != nil {
 					errors <- fmt.Errorf("recovered with message: %v", r)
@@ -159,6 +158,7 @@ func TestShrinkStack(t *testing.T) {
 
 			AtExit(func() {
 				atomic.AddInt64(&done, 1)
+				wg.Done()
 			})
 			n := rand.Intn(gcTimes)
 
@@ -169,10 +169,18 @@ func TestShrinkStack(t *testing.T) {
 		}()
 	}
 
-	exit := make(chan bool, 1)
+	exit := make(chan bool, 2)
 	go func() {
 		wg.Wait()
 		exit <- true
+	}()
+
+	go func() {
+		// Avoid deadloop.
+		select {
+		case <-time.After(20 * time.Second):
+			exit <- false
+		}
 	}()
 
 GC:
