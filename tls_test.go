@@ -137,7 +137,7 @@ func TestTLS(t *testing.T) {
 }
 
 func TestShrinkStack(t *testing.T) {
-	const times = 50000
+	const times = 20000
 	const gcTimes = 100
 	sleep := 10 * time.Millisecond
 	errors := make(chan error, times)
@@ -178,7 +178,7 @@ func TestShrinkStack(t *testing.T) {
 	go func() {
 		// Avoid deadloop.
 		select {
-		case <-time.After(30 * time.Second):
+		case <-time.After(60 * time.Second):
 			exit <- false
 		}
 	}()
