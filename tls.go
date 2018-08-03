@@ -17,7 +17,7 @@ import (
 
 var (
 	tlsDataMap  = map[unsafe.Pointer]*tlsData{}
-	tlsMu       sync.Mutex
+	tlsMu       sync.RWMutex
 	tlsUniqueID int64
 )
 
@@ -156,11 +156,11 @@ func resetAtExit() {
 		return
 	}
 
-	tlsMu.Lock()
+	tlsMu.RLock()
 	dm := tlsDataMap[gp]
 	funcs := dm.atExitFuncs
 	dm.atExitFuncs = nil
-	tlsMu.Unlock()
+	tlsMu.RUnlock()
 
 	// Call handlers in FILO order.
 	for i := len(funcs) - 1; i >= 0; i-- {
@@ -202,8 +202,9 @@ func fetchDataMap(readonly bool) *tlsData {
 
 	// Try to find saved data.
 	needHack := false
-	tlsMu.Lock()
+	tlsMu.RLock()
 	dm := tlsDataMap[gp]
+	tlsMu.RUnlock()
 
 	if dm == nil && !readonly {
 		needHack = true
@@ -211,10 +212,10 @@ func fetchDataMap(readonly bool) *tlsData {
 			id:   atomic.AddInt64(&tlsUniqueID, 1),
 			data: dataMap{},
 		}
+		tlsMu.Lock()
 		tlsDataMap[gp] = dm
+		tlsMu.Unlock()
 	}
-
-	tlsMu.Unlock()
 
 	// Current goroutine is not hacked. Hack it.
 	if needHack {

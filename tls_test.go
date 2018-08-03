@@ -136,6 +136,42 @@ func TestTLS(t *testing.T) {
 	}
 }
 
+func TestUnload(t *testing.T) {
+	// Run test in a standalone goroutine.
+	t.Run("try unload", func(t *testing.T) {
+		id := ID()
+		exitCalled := false
+		AtExit(func() {
+			exitCalled = true
+		})
+		key := "key"
+		expected := "value"
+		Set(key, MakeData(expected))
+
+		if d, ok := Get(key); !ok {
+			t.Fatalf("fail to get data. [key:%v]", key)
+		} else if actual, ok := d.Value().(string); !ok || actual != expected {
+			t.Fatalf("invalid value. [key:%v] [value:%v] [expected:%v]", key, actual, expected)
+		}
+
+		Unload()
+
+		// It's ok to call it again.
+		Unload()
+
+		if id == ID() {
+			t.Fatalf("id must be changed after unload. [id:%v]", id)
+		}
+
+		if _, ok := Get(key); ok {
+			t.Fatalf("key must be cleared. [key:%v]", key)
+		}
+
+		if exitCalled {
+			t.Fatalf("all AtExit functions must not be called.")
+		}
+	})
+}
 func TestShrinkStack(t *testing.T) {
 	const times = 20000
 	const gcTimes = 100
