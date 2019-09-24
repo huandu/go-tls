@@ -173,7 +173,7 @@ func TestUnload(t *testing.T) {
 	})
 }
 func TestShrinkStack(t *testing.T) {
-	const times = 20000
+	const times = 10000
 	const gcTimes = 100
 	sleep := 100 * time.Microsecond
 	errors := make(chan error, times)
