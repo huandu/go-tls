@@ -214,7 +214,7 @@ func TestShrinkStack(t *testing.T) {
 	go func() {
 		// Avoid deadloop.
 		select {
-		case <-time.After(20 * time.Second):
+		case <-time.After(90 * time.Second):
 			exit <- false
 		}
 	}()
