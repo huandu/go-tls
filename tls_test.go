@@ -199,7 +199,7 @@ func TestShrinkStack(t *testing.T) {
 			n := rand.Intn(gcTimes)
 
 			for j := 0; j < n; j++ {
-				triggerMoreStack(20, payload{})
+				triggerMoreStack(10, payload{})
 				time.Sleep(time.Duration((0.5 + rand.Float64()) * float64(sleep)))
 			}
 		}()
