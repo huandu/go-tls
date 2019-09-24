@@ -22,13 +22,13 @@ type payload struct {
 	data [1024]byte
 }
 
-func triggerMoreStack(n int) int {
+func triggerMoreStack(n int, p payload) int {
 	if n <= 0 {
 		return 0
 	}
 
 	// Avoid tail optimization.
-	return triggerMoreStack(n-1) + n
+	return triggerMoreStack(n-1, p) + int(p.data[0]+p.data[len(p.data)-1])
 }
 
 type closerFunc func()
@@ -86,7 +86,7 @@ func TestTLS(t *testing.T) {
 				t.Fatalf("fail to get k2.")
 			}
 
-			triggerMoreStack(10)
+			triggerMoreStack(1000, payload{})
 
 			Reset()
 
@@ -175,7 +175,7 @@ func TestUnload(t *testing.T) {
 func TestShrinkStack(t *testing.T) {
 	const times = 20000
 	const gcTimes = 100
-	sleep := 10 * time.Millisecond
+	sleep := 100 * time.Microsecond
 	errors := make(chan error, times)
 	var done int64
 
@@ -199,7 +199,7 @@ func TestShrinkStack(t *testing.T) {
 			n := rand.Intn(gcTimes)
 
 			for j := 0; j < n; j++ {
-				triggerMoreStack(100)
+				triggerMoreStack(20, payload{})
 				time.Sleep(time.Duration((0.5 + rand.Float64()) * float64(sleep)))
 			}
 		}()
@@ -214,7 +214,7 @@ func TestShrinkStack(t *testing.T) {
 	go func() {
 		// Avoid deadloop.
 		select {
-		case <-time.After(60 * time.Second):
+		case <-time.After(20 * time.Second):
 			exit <- false
 		}
 	}()
@@ -231,12 +231,17 @@ GC:
 		}
 	}
 
-	close(errors)
 	failed := false
 
-	for err := range errors {
-		failed = true
-		t.Logf("panic [err:%v]", err)
+DumpError:
+	for {
+		select {
+		case err := <-errors:
+			failed = true
+			t.Logf("panic [err:%v]", err)
+		default:
+			break DumpError
+		}
 	}
 
 	if failed {
