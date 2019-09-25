@@ -173,7 +173,7 @@ func TestUnload(t *testing.T) {
 	})
 }
 func TestShrinkStack(t *testing.T) {
-	const times = 20000
+	const times = 1000
 	const gcTimes = 100
 	sleep := 100 * time.Microsecond
 	errors := make(chan error, times)
@@ -199,7 +199,7 @@ func TestShrinkStack(t *testing.T) {
 			n := rand.Intn(gcTimes)
 
 			for j := 0; j < n; j++ {
-				triggerMoreStack(10, payload{})
+				triggerMoreStack(100, payload{})
 				time.Sleep(time.Duration((0.5 + rand.Float64()) * float64(sleep)))
 			}
 		}()
