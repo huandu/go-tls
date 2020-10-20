@@ -25,6 +25,7 @@ type tlsData struct {
 	id          int64
 	data        dataMap
 	atExitFuncs []func()
+	done        bool
 }
 
 type dataMap map[interface{}]Data
@@ -115,7 +116,7 @@ func reset(gp unsafe.Pointer, complete bool) (alreadyReset bool) {
 	tlsMu.Lock()
 	dm := tlsDataMap[gp]
 
-	if dm == nil {
+	if dm == nil || dm.done {
 		alreadyReset = true
 	} else {
 		data = dm.data
@@ -156,11 +157,12 @@ func resetAtExit() {
 		return
 	}
 
-	tlsMu.RLock()
+	tlsMu.Lock()
 	dm := tlsDataMap[gp]
 	funcs := dm.atExitFuncs
 	dm.atExitFuncs = nil
-	tlsMu.RUnlock()
+	dm.done = true
+	tlsMu.Unlock()
 
 	// Call handlers in FILO order.
 	for i := len(funcs) - 1; i >= 0; i-- {

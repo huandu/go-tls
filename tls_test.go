@@ -252,3 +252,19 @@ DumpError:
 		t.Fatalf("some AtExit handlers are not called. [expected:%v] [actual:%v]", times, done)
 	}
 }
+
+func TestUnloadInAtExitHandker(t *testing.T) {
+	ch := make(chan bool, 1)
+	go func() {
+		AtExit(func() {
+			Unload()
+		})
+		ch <- true
+	}()
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("unexpected panic. [r:%v]", r)
+		}
+	}()
+	<-ch
+}

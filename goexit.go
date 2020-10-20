@@ -6,6 +6,7 @@
 package tls
 
 import (
+	"math"
 	"runtime"
 	"unsafe"
 )
@@ -88,7 +89,7 @@ func swapGoexit(gp unsafe.Pointer, from, to uintptr) (success bool) {
 	s := (*stack)(gp)
 	stackSize := (s.hi - uintptr(unsafe.Pointer(&gp))) &^ (1<<align - 1)
 	start := s.hi - stackSize
-	sp := (*(**[1000000]byte)(unsafe.Pointer(&start)))[:stackSize:stackSize]
+	sp := (*(**[math.MaxInt32]byte)(unsafe.Pointer(&start)))[:stackSize:stackSize]
 
 	// Brute-force search goexit on stack.
 	// We must find the last match to avoid any accidentally match.
