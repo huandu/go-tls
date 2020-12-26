@@ -1,7 +1,7 @@
 # go-tls: TLS for any goroutine
 
-[![Build Status](https://travis-ci.org/huandu/go-tls.svg?branch=master)](https://travis-ci.org/huandu/go-tls)
-[![GoDoc](https://godoc.org/github.com/huandu/go-tls?status.svg)](https://godoc.org/github.com/huandu/go-tls)
+[![Build Status](https://travis-ci.com/huandu/go-tls.svg?branch=master)](https://travis-ci.com/huandu/go-tls)
+[![GoDoc](https://godoc.org/github.com/huandu/go-tls?status.svg)](https://pkg.go.dev/github.com/huandu/go-tls)
 
 _WARNING: It's not recommended to use this package in any production environment. It may crash you at any time. Use `context` instead when possible._
 
