@@ -28,6 +28,7 @@ func triggerMoreStack(n int, p payload) int {
 	}
 
 	// Avoid tail optimization.
+	p.data[n] = 1
 	return triggerMoreStack(n-1, p) + int(p.data[0]+p.data[len(p.data)-1])
 }
 
@@ -173,7 +174,7 @@ func TestUnload(t *testing.T) {
 	})
 }
 func TestShrinkStack(t *testing.T) {
-	const times = 1000
+	const times = 500
 	const gcTimes = 100
 	sleep := 100 * time.Microsecond
 	errors := make(chan error, times)
@@ -214,7 +215,7 @@ func TestShrinkStack(t *testing.T) {
 	go func() {
 		// Avoid deadloop.
 		select {
-		case <-time.After(90 * time.Second):
+		case <-time.After(15 * time.Second):
 			exit <- false
 		}
 	}()

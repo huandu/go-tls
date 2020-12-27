@@ -1,10 +1,17 @@
-version: 2
+version: 2.1
+
 jobs:
   build:
-    docker:
-      - image: circleci/golang:1.15
+    # Define parameters for Go versions.
+    parameters:
+      go-version:
+        type: string
+        default: 'latest'
 
-    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+    docker:
+      - image: circleci/golang:<< parameters.go-version >>
+
+    working_directory: /go/<< parameters.go-version >>/src/github.com/huandu/go-tls
     steps:
       - checkout
       - restore_cache:
@@ -18,8 +25,19 @@ jobs:
       - save_cache:
           key: go-mod-v4-{{ checksum "go.sum" }}
           paths:
-            - '/go/pkg/mod'
+            - '/go/<< parameters.go-version >>/pkg/mod'
 
       - run:
           name: Run tests
-          command: go test -v ./...
+          command: |
+            go version
+            go test -v ./...
+
+workflows:
+  workflow:
+    jobs:
+      - build:
+          matrix:
+            parameters:
+              go-version:
+                - '1.7'
