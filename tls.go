@@ -2,6 +2,8 @@
 // Licensed under the MIT license that can be found in the LICENSE file.
 
 // +build go1.7
+// It will be broken after go1.17, see: https://github.com/huandu/go-tls/issues/10
+// +build !go1.17
 
 // Package tls creates a TLS for a goroutine and release all resources at goroutine exit.
 package tls
