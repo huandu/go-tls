@@ -2,6 +2,8 @@
 
 [![CircleCI](https://circleci.com/gh/huandu/go-tls.svg?style=shield)](https://circleci.com/gh/huandu/go-tls)
 [![GoDoc](https://godoc.org/github.com/huandu/go-tls?status.svg)](https://pkg.go.dev/github.com/huandu/go-tls)
+    
+> :warning: This package doesn't support Go1.17.* due to Go runtime changes. Don't use this package until [#10](https://github.com/huandu/go-tls/issues/10) is resolved.
 
 _WARNING: It's not recommended to use this package in any production environment. It may crash you at any time. Use `context` instead when possible._
 
